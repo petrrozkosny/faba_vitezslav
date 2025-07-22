@@ -1,0 +1,40 @@
+let
+  Source = Csv.Document(Web.Contents("https://raw.githubusercontent.com/petrrozkosny/fabai1_data/refs/heads/main/data_nova.csv"), [Delimiter = ";", Columns = 8, Encoding = 65001, QuoteStyle = QuoteStyle.None]),
+  #"Promoted headers" = Table.PromoteHeaders(Source, [PromoteAllScalars = true])
+in
+  #"Promoted headers"
+
+
+let
+  Source = Csv.Document(Web.Contents("https://raw.githubusercontent.com/petrrozkosny/fabai1_data/refs/heads/main/data_stara.csv"), [Delimiter = ";", Columns = 8, Encoding = 65001, QuoteStyle = QuoteStyle.None]),
+  #"Promoted headers" = Table.PromoteHeaders(Source, [PromoteAllScalars = true])
+in
+  #"Promoted headers"
+
+
+
+let
+  Source = Csv.Document(Web.Contents("https://raw.githubusercontent.com/petrrozkosny/fabai1_data/refs/heads/main/dim_oblasti.csv"), [Delimiter = ";", Columns = 2, Encoding = 65001, QuoteStyle = QuoteStyle.None]),
+  #"Promoted headers" = Table.PromoteHeaders(Source, [PromoteAllScalars = true]),
+  #"Changed column type" = Table.TransformColumnTypes(#"Promoted headers", {{"stanice", type text}, {"zeme", type text}}),
+  #"Replaced value" = Table.ReplaceValue(#"Changed column type", "", null, Replacer.ReplaceValue, {"zeme"}),
+  #"Filled down" = Table.FillDown(#"Replaced value", {"zeme"})
+in
+  #"Filled down"
+
+
+
+
+
+  let
+  Source = Table.Combine({data_nova, data_stara}),
+  #"Replaced value" = Table.ReplaceValue(Source, ".", ",", Replacer.ReplaceText, {"srazky", "snih", "prumerna_teplota", "maximalni_teplota", "minimalni_teplota"}),
+  #"Changed column type with locale" = Table.TransformColumnTypes(#"Replaced value", {{"datum", type date}, {"stanice", type text}, {"lokalita", type text}, {"srazky", type number}, {"snih", Int64.Type}, {"prumerna_teplota", type text}, {"maximalni_teplota", type number}, {"minimalni_teplota", type number}}, "cs-CZ"),
+  #"Merged queries" = Table.NestedJoin(#"Changed column type with locale", {"lokalita"}, dim_oblasti, {"stanice"}, "dim_oblasti", JoinKind.LeftOuter),
+  #"Expanded dim_oblasti" = Table.ExpandTableColumn(#"Merged queries", "dim_oblasti", {"zeme"}, {"zeme"}),
+  #"Inserted year" = Table.AddColumn(#"Expanded dim_oblasti", "rok", each Date.Year([datum]), type nullable number),
+  #"Inserted quarter" = Table.AddColumn(#"Inserted year", "ctvrtleti", each Date.QuarterOfYear([datum]), type nullable number),
+  #"Inserted month" = Table.AddColumn(#"Inserted quarter", "mesic", each Date.Month([datum]), type nullable number),
+  #"Inserted conditional column" = Table.AddColumn(#"Inserted month", "typ_pocasi", each if [srazky] = null then "nevyplneno" else if [srazky] = 0 then "neprselo" else "prselo",type text)
+in
+  #"Inserted conditional column"

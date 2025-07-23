@@ -1,0 +1,18 @@
+
+/*
+1. Respektuji filtry vizuálu: stačí mi základní agregační funkce
+2. Respektuji filtry vizuálu a přidávám další: použiji CALCULATE() s agregační funkcí jako prvním parametrem a podmínkou
+3. Ruším filtry vizuálu: použiji CALCULATE s agregační funkcí jako prvním parametrem s funkcí ALL()
+4. Ruším viltry vizuálu a nastavuji jiné: pužiji CALCULATE s agregační funkcí jako prvním parametrem a podmínkou
+*/
+
+DEFINE -- příkaz pro definici
+MEASURE data[01 suma srazek] = SUM(data[srazky])
+MEASURE data[02 suma srazek ruzyne] = 
+CALCULATE(
+    SUM(data[srazky]),
+    data[lokalita] = "RUZYNE")
+
+MEASURE data[03 suma srazek vse] = CALCULATE(sum(data[srazky]),all(data[rok]))
+MEASURE data[04 suma srazek rok 2000] = CALCULATE(sum(data[srazky]),data[rok] = 2000)
+MEASURE data[nadpis grafu] = "Vývoj srážek v roce "&IF(ISFILTERED(data[rok]),MAX(data[rok]),"vše")

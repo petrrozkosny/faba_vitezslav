@@ -1,0 +1,25 @@
+BEGIN
+    -- Zkontrolovat zda tabulka test existuje, pokud ne, vytvořit ji
+    IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'test' AND schema_id = SCHEMA_ID('dbo'))
+    BEGIN
+        CREATE TABLE [dbo].[test] (
+            id INT NOT NULL,
+            datum DATETIME2(3) NOT NULL
+        );
+        PRINT 'Tabulka test byla vytvořena.';
+    END
+    ELSE
+    BEGIN
+        PRINT 'Tabulka test už existuje.';
+    END
+
+    -- Získat další ID (alternativa k IDENTITY)
+    DECLARE @next_id INT;
+    SELECT @next_id = ISNULL(MAX(id), 0) + 1 FROM [dbo].[test];
+
+    -- Vložit aktuální datum a čas do tabulky
+    INSERT INTO [dbo].[test] (id, datum)
+    VALUES (@next_id, SYSDATETIME());
+    
+    PRINT 'Aktuální datum a čas byl vložen do tabulky test.';
+END;
